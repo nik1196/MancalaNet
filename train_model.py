@@ -25,41 +25,37 @@ def hash_func(pits):
         hash_string += hex(pits[i])
     return hash_string
 
+train_data_dict = {}
 #play match with random choices, ignoring score
 def generate_match_data(game,turns=9999):
-    train_data_dict = {}
     train_data = []
     train_labels = []
     pit_p1 = 0
     pit_p2 = 0
+    random.seed()
     for turn in range(turns):
         num_zero_pits = 0
         pits = game.get_pits()
-        for i in range(7):
-            if pits[i] == 0:
-                num_zero_pits += 1
-        if num_zero_pits == 7:
+        if all(pit == 0 for pit in pits[:7]) or all(pit == 0 for pit in pits[7:]):
             break
-        num_zero_pits = 0
-        for i in range(7,14):
-            if pits[i] == 0:
-                num_zero_pits += 1
-        if num_zero_pits == 7:
-            break
-        pit_p1 = random.randrange(1,8)
-        game.play(pit_p1)
-        
-        pit_p2 = game.get_best_pit(False)
-        pit_p2_ohvec = game.get_best_pit()
         if hash_func(pits) not in train_data_dict:
             train_data.append(list(pits))
+            pit_p2_ohvec = game.get_best_pit()
             train_labels.append(list(pit_p2_ohvec))
             train_data_dict[hash_func(pits)] = 1
+        pit_p1 = random.randrange(1,8)
+        game.play(pit_p1)
+        if hash_func(pits) not in train_data_dict:
+            train_data.append(list(pits))
+            pit_p2_ohvec = game.get_best_pit()
+            train_labels.append(list(pit_p2_ohvec))
+            train_data_dict[hash_func(pits)] = 1
+        pit_p2 = game.get_best_pit(False)
         game.play(pit_p2)
     game.reset()
     return train_data, train_labels
 
-num_matches = 4000
+num_matches = 8000
 
 ips = []
 ops = []
