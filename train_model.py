@@ -2,14 +2,29 @@ import time, tensorflow as tf, numpy as np, matplotlib.pyplot as plt, mancala, r
 
 game = mancala.Mancala()
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(28, activation = tf.nn.relu, input_shape=(14,)),
+    tf.keras.layers.Dense(312, activation = tf.nn.relu, input_shape=(14,)),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(312, activation = tf.nn.relu),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(312, activation = tf.nn.relu),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(312, activation = tf.nn.relu),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(312, activation = tf.nn.relu),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(312, activation = tf.nn.relu),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(312, activation = tf.nn.relu),
+    tf.keras.layers.Dropout(0.5),
     tf.keras.layers.Dense(14, activation = tf.nn.softmax)
      ])
 
-optimizer = tf.keras.optimizers.Adam(0.01)
+
+learning_rate = 0.001
+optimizer = tf.keras.optimizers.Adam(learning_rate)
 
 model.compile(loss=tf.keras.losses.categorical_crossentropy.__name__, optimizer=optimizer,metrics=['accuracy'])
-epochs = 500
+epochs = 6000
 
 def generate_data(size):
     ip = []
@@ -34,7 +49,6 @@ def generate_match_data(game,turns=9999):
     pit_p2 = 0
     random.seed()
     for turn in range(turns):
-        num_zero_pits = 0
         pits = game.get_pits()
         if all(pit == 0 for pit in pits[:7]) or all(pit == 0 for pit in pits[7:]):
             break
@@ -53,7 +67,26 @@ def generate_match_data(game,turns=9999):
         pit_p2 = game.get_best_pit(False)
         game.play(pit_p2)
     game.reset()
+    for turn in range(turns):
+        pits = game.get_pits()
+        if all(pit == 0 for pit in pits[:7]) or all(pit == 0 for pit in pits[7:]):
+            break
+        if hash_func(pits) not in train_data_dict:
+            train_data.append(list(pits))
+            pit_p2_ohvec = game.get_best_pit()
+            train_labels.append(list(pit_p2_ohvec))
+            train_data_dict[hash_func(pits)] = 1
+        pit_p1 = random.randrange(1,8)
+        game.play(pit_p1)
+        if hash_func(pits) not in train_data_dict:
+            train_data.append(list(pits))
+            pit_p2_ohvec = game.get_best_pit()
+            train_labels.append(list(pit_p2_ohvec))
+            train_data_dict[hash_func(pits)] = 1
+        pit_p2 = random.randrange(7,14)
+        game.play(pit_p2)
     return train_data, train_labels
+    game.reset()
 
 num_matches = 8000
 
@@ -72,12 +105,12 @@ print(ips)
 print(ops)
 
 def scheduler(epoch):
-    if epoch <= 100:
-        return 0.01
+    if epoch <= 200:
+        return learning_rate
     else:
-        return 0.01 * np.exp(0.1*(int(100-epoch)/10))
-
-history = model.fit(ips,ops,batch_size=len(ips),epochs=epochs,validation_split=0.2,verbose=1, callbacks=[tf.keras.callbacks.LearningRateScheduler(scheduler)])
+        return learning_rate / 10 #* (int((epoch-100)/100)))
+##, callbacks=[tf.keras.callbacks.LearningRateScheduler(scheduler)]
+history = model.fit(ips,ops,batch_size=len(ips),epochs=epochs,validation_split=0.2,verbose=1)
 
 model.save('new model', save_format='h5')
 fig = plt.figure()
