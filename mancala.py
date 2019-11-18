@@ -4,7 +4,7 @@ class Mancala:
         self.pits = [5 for i in range(14)]
         random.seed()
         
-    def play(self, pit_num, gain=0):  
+    def play(self, pit_num, gain=0, return_state=False):
         pit = pit_num - 1
         next_pit = (pit + self.pits[pit]+1) % 14
         num_iter = self.pits[pit]
@@ -12,9 +12,11 @@ class Mancala:
         for i in range(pit+1, pit+num_iter+1):
             self.pits[i%14] += 1
         if self.pits[next_pit] > 0:
-            return gain + self.play(next_pit+1, gain)
+            gain += self.play(next_pit+1, gain)
         score = self.pits[(next_pit+1) % 14]
         self.pits[(next_pit+1) % 14] = 0
+        if return_state == True:
+            return self.pits, score
         return score
 
     def get_best_pit(self, as_one_hot = True):
@@ -30,7 +32,7 @@ class Mancala:
                 best_pit = pit
             self.pits = list(pits_temp)
         if as_one_hot == False:
-            return best_pit+1
+                return best_pit
         return [ 1 if i == best_pit else 0 for i in range(len(self.pits))]
 
     
@@ -44,6 +46,13 @@ class Mancala:
     def get_pits(self):
         return self.pits
 
+    def set_pits(self, pits):
+        self.pits = pits
+
     def reset(self):
         self.pits = [5 for i in range(14)]
+
+    def done(self):
+        return (all(i == 0 for i in self.pits[:7]) or all(i == 0 for i in self.pits[7:]))
+
         
